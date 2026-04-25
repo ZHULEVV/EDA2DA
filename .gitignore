@@ -1,0 +1,16 @@
+# Секреты (НЕ отправляем)
+.env
+db.sqlite3
+
+# Кэш Python
+__pycache__/
+*.pyc
+
+# Виртуальные окружения
+venv/
+.venv/
+
+# Лишнее
+.idea/
+.vscode/
+*.log
