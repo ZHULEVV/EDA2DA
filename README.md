@@ -1,114 +1,147 @@
-🍴 Проект «eda2da» (Кулинарный помощник) — Backend Engine
-Данный документ является техническим описанием текущего состояния проекта. Бэкенд-часть («Двигатель») полностью реализована, протестирована и готова к интеграции с фронтендом.
-🏗 Архитектура и Стек технологий
-Тип системы: Трёхуровневое веб-приложение (Three-Tier Architecture).
-Backend: Python 3.12 + Django 5.0.
-API: Django REST Framework (DRF) 3.15.
-Database: PostgreSQL 16.
-Containerization: Docker / Docker Compose.
-Auth: JWT (JSON Web Token) через djangorestframework-simplejwt.
-Documentation: Swagger UI через drf-spectacular.
-📁 Структура репозитория (Monorepo)
-/backend — Исходный код сервера.
-/config — Глобальные настройки Django, маршрутизация API и Swagger.
-/users — Управление пользователями, ролями (GUEST, USER, SUBSCRIBER, MODERATOR) и JWT.
-/recipes — Модели рецептов, ингредиентов и логика масштабирования порций.
-/mealplan — Логика планирования питания и агрегации списка покупок.
-/frontend — Заготовка под React-приложение.
-/db — Схемы базы данных (ERD).
-docker-compose.yml — Оркестрация всех сервисов.
-🗄 Модель данных (Database Schema)
+# 🍴 eda2da — Кулинарный помощник
+
+> Веб-приложение для поиска рецептов по ингредиентам, планирования питания и автоматической генерации списков покупок.
+
+[![Stack](https://img.shields.io/badge/Stack-React%20%2B%20Django%20%2B%20PostgreSQL-blue)](#)
+[![Methodology](https://img.shields.io/badge/Methodology-Scrum-orange)](#)
+[![Status](https://img.shields.io/badge/Backend-Ready-success)](#)
+[![Docs](https://img.shields.io/badge/Docs-GitHub%20Wiki-lightgrey)](#)
+
+---
+
+## 📑 Содержание
+
+1. [О проекте](#-о-проекте)
+2. [Архитектура и стек технологий](#-архитектура-и-стек-технологий)
+3. [Структура репозитория](#-структура-репозитория)
+4. [Модель данных](#-модель-данных)
+5. [Бизнес-логика](#%EF%B8%8F-ключевая-бизнес-логика)
+6. [Быстрый старт (Docker)](#-быстрый-старт-docker-compose)
+7. [Запуск без Docker](#-запуск-без-docker)
+8. [Переменные окружения](#-переменные-окружения)
+9. [API Endpoints](#-api-endpoints)
+10. [Тестирование](#-тестирование)
+11. [Git Flow](#-стратегия-ветвления-git-flow)
+12. [Команда](#-команда-икбо-63-23)
+13. [Статус проекта](#-текущий-статус-проекта)
+
+---
+
+## 🎯 О проекте
+
+**eda2da** — трёхуровневое веб-приложение, которое помогает пользователям:
+
+- 🔍 находить рецепты по имеющимся ингредиентам;
+- 📅 планировать питание на день, неделю или произвольный период;
+- 🛒 автоматически формировать сводный список покупок;
+- ⚖️ масштабировать порции с пересчётом веса и КБЖУ;
+- 👥 разграничивать роли: гость, пользователь, подписчик, модератор.
+
+Бэкенд-часть («Двигатель») полностью реализована, протестирована и готова к интеграции с фронтендом.
+
+---
+
+## 🏗 Архитектура и стек технологий
+
+| Слой | Технология |
+|------|-----------|
+| **Тип системы** | Three-Tier Architecture |
+| **Backend** | Python 3.12 + Django 5.0 |
+| **API** | Django REST Framework 3.15 |
+| **Database** | PostgreSQL 16 |
+| **Containerization** | Docker / Docker Compose |
+| **Auth** | JWT (`djangorestframework-simplejwt`) |
+| **Documentation** | Swagger UI (`drf-spectacular`) |
+| **Frontend** | React + Vite (JavaScript) |
+
+---
+
+## 📁 Структура репозитория
+
+Монорепозиторий со следующим деревом:
+
+```
+eda2da/
+├── frontend/                   # React + Vite (JavaScript)
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   └── api/
+│   ├── package.json
+│   └── vite.config.js
+│
+├── backend/                    # Python 3.12 / Django REST Framework
+│   ├── config/                 # settings.py, urls.py, Swagger
+│   ├── users/                  # Пользователи, роли, JWT
+│   ├── recipes/                # Рецепты, ингредиенты, масштабирование
+│   ├── mealplan/               # Планы питания, список покупок
+│   ├── requirements.txt
+│   └── manage.py
+│
+├── db/                         # Миграции и схемы
+│   └── erd.png                 # ERD-диаграмма
+│
+├── docs/                       # ТЗ, диаграммы, Sphinx-документация
+│   └── source/
+│
+├── .github/
+│   └── workflows/
+│       ├── backend.yml         # CI: pytest + pylint
+│       └── frontend.yml        # CI: Jest + ESLint
+│
+├── docker-compose.yml          # Оркестрация всех сервисов
+├── .env.example                # Шаблон переменных окружения
+├── CHANGELOG.md
+└── README.md
+```
+
+---
+
+## 🗄 Модель данных
+
 Реализованы следующие сущности:
-User (Custom Model): Расширенный профиль с полями role, is_subscriber, preferences.
-Ingredient: Справочник продуктов (название, единица измерения, калорийность, флаг аллергена).
-Recipe: Заголовок рецепта (КБЖУ, сложность, время готовки, статус модерации).
-RecipeComposition: Промежуточная таблица Many-to-Many между Рецептом и Ингредиентом с указанием веса (quantity).
-MealPlan: План питания пользователя на диапазон дат.
-MealPlanRecipe: Привязка конкретного рецепта к дате и типу приема пищи (Завтрак/Обед/Ужин).
-⚙️ Ключевая бизнес-логика (Business Logic)
-Масштабирование порций (scale_ingredients): Метод в модели Recipe, динамически пересчитывающий вес всех ингредиентов при изменении количества порций.
-Генератор списка покупок (generate_shopping_list): Метод в модели MealPlan, который выполняет агрегацию (суммирование) всех ингредиентов из разных рецептов за выбранный период времени.
-Система прав доступа:
-AllowAny: Регистрация и просмотр списка проверенных рецептов.
-IsAuthenticated: Управление личными планами питания и профилем.
-IsAuthenticatedOrReadOnly: Создание контента (рецептов).
-Admin/Moderator: Доступ к админ-панели и флагу is_moderated.
-🚀 Инструкция по запуску для Разработчика / ИИ
-Для развертывания проекта необходимо:
-Создать файл .env на основе .env.example.
-Запустить контейнеры:
-code
-Bash
-docker compose up --build -d
-Выполнить миграции базы данных:
-code
-Bash
-docker compose exec backend python manage.py migrate
-Создать суперпользователя:
-code
-Bash
-docker compose exec backend python manage.py createsuperuser
-📍 API Endpoints (Тестирование)
-Полная интерактивная документация доступна после запуска по адресу:
-👉 http://localhost:8000/api/schema/swagger-ui/
-Основные маршруты:
-POST /api/users/register/ — Регистрация.
-POST /api/users/login/ — Получение JWT-токенов.
-GET /api/recipes/recipes/ — Список всех одобренных рецептов.
-GET /api/mealplan/plans/{id}/shopping_list/ — Генерация списка продуктов для плана.
-Текущий статус проекта:
-Бэкенд-часть полностью завершена. Все функциональные требования Практик №1–10 реализованы. Система готова к подключению фронтенд-интерфейса и реализации пользовательских сценариев.
-В гитхабе вот как выглядит дерево должны быть также и уменя  
 
+| Сущность | Назначение |
+|----------|-----------|
+| **User** *(Custom Model)* | Расширенный профиль: `role`, `is_subscriber`, `preferences` |
+| **Ingredient** | Справочник продуктов: название, ед. измерения, калорийность, флаг аллергена |
+| **Recipe** | Заголовок рецепта: КБЖУ, сложность, время готовки, статус модерации |
+| **RecipeComposition** | Промежуточная M2M-таблица «Рецепт ↔ Ингредиент» с указанием `quantity` |
+| **MealPlan** | План питания пользователя на диапазон дат |
+| **MealPlanRecipe** | Привязка рецепта к дате и приёму пищи (Завтрак / Обед / Ужин) |
 
-Name		
-dima5778
-dima5778
-Create .env.example
-9ef875b
- · 
-last week
-.github/workflows
-Create frontend.yml
-last week
-backend
-Create manage.py
-last week
-db
-Create erd.png
-last week
-docs/source
-Create s
-last week
-frontend
-Create vite.config.js
-last week
-.env.example
-Create .env.example
-last week
-CHANGELOG.md
-Create CHANGELOG.md
-last week
-README.md
-Update README.md
-last week
-docker-compose.yml
-Create docker-compose.yml
-last week
-Repository files navigation
-README
-eda2da — Кулинарный помощник
-Веб-приложение для поиска рецептов по ингредиентам, планирования питания и генерации списков покупок.
+ERD-диаграмма доступна в `db/erd.png`.
 
-Стек: React + Django REST Framework + PostgreSQL
-Методология: Scrum (5 спринтов по 2 недели)
-Документация: GitHub Wiki
+---
 
-Быстрый старт (Docker Compose)
-Требования
-Docker >= 24.0
-Docker Compose >= 2.0
-Запуск
+## ⚙️ Ключевая бизнес-логика
+
+### 🔢 Масштабирование порций
+Метод `scale_ingredients` в модели `Recipe` динамически пересчитывает вес всех ингредиентов при изменении количества порций.
+
+### 🛒 Генератор списка покупок
+Метод `generate_shopping_list` в модели `MealPlan` агрегирует (суммирует) все ингредиенты из разных рецептов за выбранный период времени.
+
+### 🔐 Система прав доступа
+
+| Уровень доступа | Возможности |
+|-----------------|-------------|
+| `AllowAny` | Регистрация, просмотр списка проверенных рецептов |
+| `IsAuthenticated` | Управление личными планами питания и профилем |
+| `IsAuthenticatedOrReadOnly` | Создание контента (рецептов) |
+| `Admin / Moderator` | Доступ к админ-панели, флаг `is_moderated` |
+
+---
+
+## 🚀 Быстрый старт (Docker Compose)
+
+### Требования
+- Docker `>= 24.0`
+- Docker Compose `>= 2.0`
+
+### Запуск
+
+```bash
 # 1. Клонировать репозиторий
 git clone https://github.com/<org>/eda2da.git
 cd eda2da
@@ -117,17 +150,52 @@ cd eda2da
 cp .env.example .env
 
 # 3. Поднять все сервисы
-docker compose up --build
-Приложение будет доступно по адресам:
+docker compose up --build -d
 
-Сервис	URL
-Frontend (React)	http://localhost:5173
-Backend API	http://localhost:8000/api/
-Swagger UI	http://localhost:8000/api/schema/swagger-ui/
-pgAdmin	http://localhost:5050
-Переменные окружения
-Скопируйте .env.example в .env и заполните значения:
+# 4. Применить миграции
+docker compose exec backend python manage.py migrate
 
+# 5. Создать суперпользователя
+docker compose exec backend python manage.py createsuperuser
+```
+
+### Доступные сервисы
+
+| Сервис | URL |
+|--------|-----|
+| 🖥 Frontend (React) | http://localhost:5173 |
+| ⚙️ Backend API | http://localhost:8000/api/ |
+| 📘 Swagger UI | http://localhost:8000/api/schema/swagger-ui/ |
+| 🐘 pgAdmin | http://localhost:5050 |
+
+---
+
+## 💻 Запуск без Docker
+
+### Backend
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## 🔧 Переменные окружения
+
+Скопируйте `.env.example` в `.env` и заполните значения:
+
+```env
 # Django
 SECRET_KEY=your-secret-key-here
 DEBUG=False
@@ -147,47 +215,29 @@ JWT_REFRESH_TOKEN_LIFETIME=7        # дни
 # pgAdmin
 PGADMIN_EMAIL=admin@eda2da.ru
 PGADMIN_PASSWORD=admin
-Структура репозитория
-eda2da/
-├── frontend/               # React + Vite (JavaScript)
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   └── api/
-│   ├── package.json
-│   └── vite.config.js
-├── backend/                # Python 3.12 / Django REST Framework
-│   ├── recipes/            # Модели Recipe, Ingredient
-│   ├── users/              # Модели User, Subscription
-│   ├── mealplan/           # Модель MealPlan
-│   ├── config/             # settings.py, urls.py
-│   ├── requirements.txt
-│   └── manage.py
-├── db/                     # Миграции PostgreSQL, ERD-схемы
-│   └── erd.png
-├── docs/                   # ТЗ, диаграммы, Sphinx-документация
-│   └── source/
-├── .github/
-│   └── workflows/
-│       ├── backend.yml     # CI: pytest + pylint
-│       └── frontend.yml    # CI: Jest + ESLint
-├── docker-compose.yml
-├── .env.example
-├── CHANGELOG.md
-└── README.md
-Запуск без Docker
-Backend
-cd backend
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
-Frontend
-cd frontend
-npm install
-npm run dev
-Тестирование
+```
+
+---
+
+## 📍 API Endpoints
+
+Полная интерактивная документация доступна после запуска по адресу:
+👉 **http://localhost:8000/api/schema/swagger-ui/**
+
+### Основные маршруты
+
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| `POST` | `/api/users/register/` | Регистрация пользователя |
+| `POST` | `/api/users/login/` | Получение JWT-токенов |
+| `GET`  | `/api/recipes/recipes/` | Список одобренных рецептов |
+| `GET`  | `/api/mealplan/plans/{id}/shopping_list/` | Генерация списка продуктов для плана |
+
+---
+
+## 🧪 Тестирование
+
+```bash
 # Backend (pytest)
 cd backend
 pytest --cov=. --cov-report=term-missing
@@ -195,18 +245,44 @@ pytest --cov=. --cov-report=term-missing
 # Frontend (Jest)
 cd frontend
 npm test
-Стратегия ветвления (Git Flow)
-Ветка	Назначение
-main	Стабильная production-ветка
-develop	Основная ветка разработки
-feature/sprint-N-<name>	Задачи спринта
-hotfix/<description>	Срочные исправления в production
-Все изменения вносятся через Pull Request с code review минимум от одного участника.
-Commit-сообщения: feat:, fix:, docs:, test:, refactor: (Conventional Commits).
+```
 
-Команда (группа ИКБО-63-23)
-Роль	Участник
-Product Owner / Аналитик	Поспелов Д.Д.
-Scrum Master / Тестировщик	Жулёв Е.А.
-Frontend / Backend разработчик	Оганнисян Н.Г.
-Backend / Технический писатель	Головач Н.Е.
+---
+
+## 🌿 Стратегия ветвления (Git Flow)
+
+| Ветка | Назначение |
+|-------|-----------|
+| `main` | Стабильная production-ветка |
+| `develop` | Основная ветка разработки |
+| `feature/sprint-N-<name>` | Задачи спринта |
+| `hotfix/<description>` | Срочные исправления в production |
+
+> 🔍 Все изменения вносятся через **Pull Request** с code review минимум от одного участника.
+>
+> 📝 Commit-сообщения: `feat:`, `fix:`, `docs:`, `test:`, `refactor:` ([Conventional Commits](https://www.conventionalcommits.org/)).
+
+---
+
+## 👥 Команда (ИКБО-63-23)
+
+| Роль | Участник |
+|------|---------|
+| 📊 Product Owner / Аналитик | **Поспелов Д.Д.** |
+| 🎯 Scrum Master / Тестировщик | **Жулёв Е.А.** |
+| 💻 Frontend / Backend разработчик | **Оганнисян Н.Г.** |
+| ⚙️ Backend / Технический писатель | **Головач Н.Е.** |
+
+---
+
+## ✅ Текущий статус проекта
+
+> **Бэкенд-часть полностью завершена.**
+> Все функциональные требования Практик №1–10 реализованы.
+> Система готова к подключению фронтенд-интерфейса и реализации пользовательских сценариев.
+
+---
+
+<p align="center">
+  <sub>Сделано с ❤️ группой ИКБО-63-23 · РТУ МИРЭА · Scrum, 5 спринтов по 2 недели</sub>
+</p>
